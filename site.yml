@@ -31,17 +31,16 @@
     nginx_web_root: /var/www/html
 
   tasks:
+    - name: Wait for automatic updates to finish if running
+      shell: while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done;
+      changed_when: false
+
     - name: Install Nginx web server
       apt:
         name: nginx
         state: present
         update_cache: yes
         cache_valid_time: 3600
-        dpkg_lock_timeout: 300
-      register: apt_result
-      until: apt_result is success
-      retries: 5
-      delay: 10
 
     - name: Ensure Nginx is started and enabled
       service:
@@ -51,7 +50,7 @@
 
     - name: Deploy compiled artifact from Master to Prod Nginx root
       copy:
-        src: /tmp/master_buffer/index.html   # The destination path where the fetch module saved the file on the Master node
+        src: /tmp/master_buffer/index.html
         dest: "{{ nginx_web_root }}/index.html"
         mode: '0644'
       notify: restart nginx
