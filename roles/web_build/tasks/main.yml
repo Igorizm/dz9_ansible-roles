@@ -1,16 +1,16 @@
 ---
 - name: Create local build directory on Build Node
   file:
-    path: /tmp/workspace
+    path: /tmp/build_zone
     state: directory
 
 - name: Compile web artifact from Jinja2 template
   template:
     src: index.html.j2
-    dest: /tmp/workspace/index.html
+    dest: /tmp/build_zone/index.html
 
 - name: Fetch compiled artifact back to Ansible Master buffer
   fetch:
-    src: /tmp/workspace/index.html
+    src: /tmp/build_zone/index.html
     dest: /tmp/master_buffer/index.html
     flat: yes
