@@ -1,0 +1,23 @@
+---
+- name: Wait for automatic updates to finish if running
+  shell: while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done;
+  changed_when: false
+
+- name: Ensure Nginx is installed on Prod Node
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Ensure Nginx service is started and enabled
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Deploy compiled web artifact from Master to Prod Nginx root
+  copy:
+    src: /tmp/master_buffer/index.html
+    dest: "{{ nginx_web_root }}/index.html"
+    mode: '0644'
+  notify: restart nginx service

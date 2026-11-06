@@ -1,62 +1,12 @@
 ---
-# --- STAGE 1: BUILD PROCESS ON THE BUILD NODE ---
-- name: Build stage on Build Node
+- name: Step 1 - Build Artifact on Build Node
   hosts: build_nodes
   become: yes
-  vars:
-    workspace_dir: /tmp/build_zone
+  roles:
+    - web_build
 
-  tasks:
-    - name: Create local build directory
-      file:
-        path: "{{ workspace_dir }}"
-        state: directory
-
-    - name: Compile web artifact from Jinja2 template
-      template:
-        src: index.html.j2
-        dest: "{{ workspace_dir }}/index.html"
-
-    - name: Fetch compiled artifact back to Ansible Master buffer
-      fetch:
-        src: "{{ workspace_dir }}/index.html"
-        dest: /tmp/master_buffer/index.html
-        flat: yes
-
-# --- STAGE 2: DEPLOYMENT ON THE PRODUCTION NODE ---
-- name: Deploy stage on Prod Node
+- name: Step 2 - Deploy Artifact to Prod Node
   hosts: prod_nodes
   become: yes
-  vars:
-    nginx_web_root: /var/www/html
-
-  tasks:
-    - name: Wait for automatic updates to finish if running
-      shell: while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done;
-      changed_when: false
-
-    - name: Install Nginx web server
-      apt:
-        name: nginx
-        state: present
-        update_cache: yes
-        cache_valid_time: 3600
-
-    - name: Ensure Nginx is started and enabled
-      service:
-        name: nginx
-        state: started
-        enabled: yes
-
-    - name: Deploy compiled artifact from Master to Prod Nginx root
-      copy:
-        src: /tmp/master_buffer/index.html
-        dest: "{{ nginx_web_root }}/index.html"
-        mode: '0644'
-      notify: restart nginx
-
-  handlers:
-    - name: restart nginx
-      service:
-        name: nginx
-        state: restarted
+  roles:
+    - web_prod
